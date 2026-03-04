@@ -1,0 +1,133 @@
+📊 Aurora Sentinel – Slide vs Member Mapping
+🔹 Slide 1: Title Slide
+
+(Project Name, Team ID, Team Members, Mentor)
+
+🎤 Member 1 – Team Leader (D. Lakshitha)
+Speaks:
+
+Project name
+
+Team ID
+
+Team members
+
+Mentor name
+
+🗣️ Script:
+“Good morning respected judges and teachers.
+We are Team ID TEAM_13618.
+Our project title is Aurora Sentinel – Smart Crime Reporting System.
+I am D. Lakshitha, the team leader, along with my team members Bhavya Latha, B. Lalitha, and T. Venkata Loukya.
+Our mentor is Kurumurthy Pasupula.”
+
+🔹 Slide 2: Problem Statement
+
+🎤 Member 1 – D. Lakshitha
+Speaks:
+
+Problems in current crime reporting system
+
+Need for a better system
+
+🗣️ Script:
+“Current crime reporting systems are slow and difficult.
+People face long processes and do not get proper updates.
+Police also find it hard to manage many complaints.
+So, we need a simple, fast, and safe crime reporting system.”
+
+🔹 Slide 3: Project Overview / Introduction
+
+🎤 Member 2 – Bhavya Latha
+Speaks:
+
+What is Aurora Sentinel
+
+Why it is useful
+
+🗣️ Script:
+“Aurora Sentinel is a smart online crime reporting system.
+People can report crimes anytime and upload photos or videos.
+They can also track their complaint status easily.”
+
+🔹 Slide 4: End Users
+
+🎤 Member 2 – Bhavya Latha
+Speaks:
+
+Who uses the system
+
+🗣️ Script:
+“The main users are citizens, police, government officers, and emergency teams.
+This system helps all of them work together.”
+
+🔹 Slide 5: Wow Factor / Special Features
+
+🎤 Member 3 – B. Lalitha
+Speaks:
+
+Key features
+
+Why the project is special
+
+🗣️ Script:
+“Aurora Sentinel allows fast crime reporting with live location and evidence.
+Serious cases are handled first.
+User data is safe, and people can track complaint status live.”
+
+🔹 Slide 6: Modelling / System Flow
+
+🎤 Member 3 – B. Lalitha
+Speaks:
+
+How the system works step by step
+
+🗣️ Script:
+“First, the user reports a crime.
+Then evidence and location are uploaded.
+The system sorts the case and sends it to police.
+Police verify the case and update the status.”
+
+🔹 Slide 7: Results / Outcomes
+
+🎤 Member 4 – T. Venkata Loukya
+Speaks:
+
+What we achieved
+
+🗣️ Script:
+“Our system helps police respond faster.
+People get clear updates.
+More people report crimes, which improves safety.”
+
+🔹 Slide 8: Conclusion
+
+🎤 Member 4 – T. Venkata Loukya
+Speaks:
+
+Final summary
+
+🗣️ Script:
+“Aurora Sentinel makes crime reporting easy and clear.
+It connects people and police and improves public safety.”
+
+🔹 Slide 9: Future Scope
+
+🎤 Member 4 – T. Venkata Loukya
+Speaks:
+
+Future improvements
+
+🗣️ Script:
+“In the future, we plan to add voice reporting, emergency SOS, better security, and nationwide use.”
+
+🔹 Slide 10: Thank You
+
+🎤 Member 1 – Team Leader (D. Lakshitha)
+Speaks:
+
+Closing
+
+🗣️ Script:
+“Thank you for giving us this opportunity.
+We are happy to answer your questions.
