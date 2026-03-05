@@ -12,9 +12,10 @@ import matplotlib.pyplot as plt
 from matplotlib import font_manager
 
 font_path = "NotoSans-Regular.ttf"
-font_manager.fontManager.addfont(font_path)
+if os.path.exists(font_path):
+    font_manager.fontManager.addfont(font_path)
+    plt.rcParams["font.family"] = "Noto Sans"
 
-plt.rcParams["font.family"] = "Noto Sans"
 import numpy as np
 import math
 
@@ -121,15 +122,15 @@ CREATE TABLE IF NOT EXISTS reports (
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS sos_alerts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    location TEXT,
-    latitude REAL,
-    longitude REAL,
-    place_name TEXT,
-    status TEXT,
-    timestamp TEXT,
+    location TEXT, latitude REAL, longitude REAL,
+    place_name TEXT, status TEXT, timestamp TEXT,
     assigned_station TEXT
 )""")
 conn.commit()
+
+# ================================================================
+#  STATION PASSKEYS & MAPPING
+# ================================================================
 
 station_passkeys = {
     "Hyderabad": "HYD2026",
@@ -168,6 +169,7 @@ STATION_COORDS = {
 }
 
 def get_nearest_station(lat, lon):
+    """Returns the nearest police station based on GPS coordinates."""
     min_dist = float('inf')
     nearest = "Hyderabad"
     for station, coords in STATION_COORDS.items():
@@ -210,7 +212,7 @@ def train_and_save_model():
         ('Murder', 'Suspected murder case found in field', 'High'),
         ('Emergency', 'One tap emergency image submission', 'High'),
     ]
-    
+
     df = pd.DataFrame(data, columns=['crime_type', 'description', 'priority'])
     X = df[['crime_type', 'description']]
     y = df['priority']
@@ -234,29 +236,28 @@ def get_priority_ml(crime_type, description):
     if crime_type in critical_crimes:
         return "High"
     try:
-        if not description or description.strip() == "": desc = "general incident"
-        else: desc = description
+        if not description or description.strip() == "":
+            desc = "general incident"
+        else:
+            desc = description
         input_data = pd.DataFrame({'crime_type': [crime_type], 'description': [desc]})
         prediction = ml_model.predict(input_data)
         return prediction[0]
     except:
         high = ["Assault","Cyber Crime","Harassment","Robbery","Kidnapping","Domestic Violence","Murder"]
-        if crime_type in high: return "High"
+        if crime_type in high:
+            return "High"
         return "Medium"
 
 # ================================================================
 #  HELPER: SMART ADDRESS FETCHER
 # ================================================================
 
-def is_coords_only(text):
-    if not text: return True
-    return not any(c.isalpha() for c in text)
-
 def get_place_name(lat, lon):
     try:
-        r = requests.get("https://nominatim.openstreetmap.org/reverse", 
-                         params={"lat": lat, "lon": lon, "format": "json"}, 
-                         headers={"User-Agent": "AuroraSentinel/1.0"}, 
+        r = requests.get("https://nominatim.openstreetmap.org/reverse",
+                         params={"lat": lat, "lon": lon, "format": "json"},
+                         headers={"User-Agent": "AuroraSentinel/1.0"},
                          timeout=10)
         data = r.json()
         return data.get("display_name", f"{lat:.5f}, {lon:.5f}")
@@ -337,6 +338,8 @@ ALL_T = {
         "no_sos":           "No SOS alerts.",
         "logout":           "🚪 Logout",
         "chart_main":       "📊 System Overview: Cases, Emergencies & SOS",
+        "chart_xlabel":     "Category",
+        "chart_ylabel":     "Count",
         "no_data_chart":    "No data available for charts yet.",
         "gps_loc_label":    "📍 GPS Location:",
         "gps_coords":       "🌐 GPS Coordinates:",
@@ -368,33 +371,36 @@ ALL_T = {
         "emg_submitted":    "🚨 Emergency Submitted!",
         "routed_to":        "🚔 Routed to",
         "ml_info":          "🤖 AI Priority Prediction Active (Learns from Description)",
-        "legend_high_crimes": "High Priority Crimes",
+        "legend_high_crimes": "High Priority\nCrimes",
         "legend_emergencies": "Emergencies",
-        "legend_sos": "SOS Alerts",
-        "legend_medium": "Medium Priority",
-        "legend_low": "Low Priority",
+        "legend_sos":       "SOS Alerts",
+        "legend_medium":    "Medium\nPriority",
+        "legend_low":       "Low\nPriority",
         "html_loc_detected": "Location Detected!",
-        "html_lat": "Lat",
-        "html_lon": "Lon",
-        "html_err_denied": "❌ Location access denied.",
-        "html_detecting": "📡 Detecting…",
+        "html_lat":         "Lat",
+        "html_lon":         "Lon",
+        "html_err_denied":  "❌ Location access denied.",
+        "html_detecting":   "📡 Detecting…",
         "html_btn_detected": "✅ GPS Detected",
-        "fetching_addr": "📍 Fetching GPS address...",
-        "map_title": "📍 Live Case Locations Map",
-        "no_gps_map": "No GPS data available to display on map.",
-        "critical_alert": "🚨 CRITICAL CASES DETECTED - IMMEDIATE ACTION REQUIRED 🚨",
-        "sidebar_alert": "🚨 {} High Priority Cases",
-        # Receipt System - UPDATED TEXT
-        "receipt_title": "🧾 CRIME REPORT RECEIPT",
-        "receipt_warning": "⚠️ IMPORTANT: Save this Report ID by taking a screenshot in your device to track your case status.",
-        "track_id_prompt": "Enter your Report ID (Case ID):",
-        # QR Code
-        "qr_title": "📡 Share App",
-        "qr_caption": "Scan to open on device",
-        # Warning text for GPS
-        "html_warn_enter": "⚠️ IMPORTANT: Click boxes below & press ENTER.",
-        # Close button
-        "close_case_btn": "🔒 Close Case"
+        "fetching_addr":    "📍 Fetching GPS address...",
+        "map_title":        "📍 Live Case Locations Map",
+        "no_gps_map":       "No GPS data available to display on map.",
+        "critical_alert":   "🚨 CRITICAL CASES DETECTED - IMMEDIATE ACTION REQUIRED 🚨",
+        "sidebar_alert":    "🚨 {} High Priority Cases",
+        "receipt_title":    "🧾 CRIME REPORT RECEIPT",
+        "receipt_warning":  "⚠️ IMPORTANT: Save this Report ID by taking a screenshot in your device to track your case status.",
+        "track_id_prompt":  "Enter your Report ID (Case ID):",
+        "qr_title":         "📡 Share App",
+        "qr_caption":       "Scan to open on device",
+        "html_warn_enter":  "⚠️ IMPORTANT: Click boxes below & press ENTER.",
+        "close_case_btn":   "🔒 Close Case",
+        "nearest_station":  "📍 Nearest Station:",
+        "sos_routed_to":    "🚔 SOS Routed to Nearest Station:",
+        "emg_routed_to":    "🚔 Emergency Routed to Nearest Station:",
+        "fallback_station": "(Fallback: based on selected area)",
+        "sos_station_info": "ℹ️ SOS is automatically routed to the nearest police station based on your GPS coordinates.",
+        "total_sos":        "Total SOS Alerts",
+        "station_label":    "🏢 Assigned Station:",
     },
     "Hindi": {
         "title":            "🚨 ऑरोरा सेंटिनल – अपराध रिपोर्टिंग और ट्रैकिंग सिस्टम",
@@ -465,6 +471,8 @@ ALL_T = {
         "no_sos":           "कोई SOS अलर्ट नहीं।",
         "logout":           "🚪 लॉगआउट",
         "chart_main":       "📊 सिस्टम अवलोकन: केस, इमरजेंसी और SOS",
+        "chart_xlabel":     "श्रेणी",
+        "chart_ylabel":     "संख्या",
         "no_data_chart":    "चार्ट के लिए अभी तक डेटा उपलब्ध नहीं।",
         "gps_loc_label":    "📍 GPS स्थान:",
         "gps_coords":       "🌐 GPS निर्देशांक:",
@@ -496,33 +504,36 @@ ALL_T = {
         "emg_submitted":    "🚨 इमरजेंसी रिपोर्ट दर्ज!",
         "routed_to":        "🚔 भेजा गया:",
         "ml_info":          "🤖 AI प्राथमिकता भविष्यवाणी सक्रिय (विवरण से सीखता है)",
-        "legend_high_crimes": "उच्च प्राथमिकता अपराध",
-        "legend_emergencies": "आपातकालीन रिपोर्ट",
-        "legend_sos": "SOS अलर्ट",
-        "legend_medium": "मध्यम प्राथमिकता",
-        "legend_low": "निम्न प्राथमिकता",
+        "legend_high_crimes": "उच्च प्राथमिकता\nअपराध",
+        "legend_emergencies": "आपातकाल",
+        "legend_sos":       "SOS अलर्ट",
+        "legend_medium":    "मध्यम\nप्राथमिकता",
+        "legend_low":       "निम्न\nप्राथमिकता",
         "html_loc_detected": "स्थान पता चला!",
-        "html_lat": "अक्षांश",
-        "html_lon": "देशांतर",
-        "html_err_denied": "❌ स्थान अनुमति अस्वीकार।",
-        "html_detecting": "📡 पता लगा रहा है…",
+        "html_lat":         "अक्षांश",
+        "html_lon":         "देशांतर",
+        "html_err_denied":  "❌ स्थान अनुमति अस्वीकार।",
+        "html_detecting":   "📡 पता लगा रहा है…",
         "html_btn_detected": "✅ GPS पता चला",
-        "fetching_addr": "📍 GPS पता प्राप्त कर रहे हैं...",
-        "map_title": "📍 लाइव केस लोकेशन मैप",
-        "no_gps_map": "मैप पर दिखाने के लिए कोई GPS डेटा उपलब्ध नहीं।",
-        "critical_alert": "🚨 गंभीर मामले पाए गए - तत्काल कार्रवाई आवश्यक 🚨",
-        "sidebar_alert": "🚨 {} उच्च प्राथमिकता केस",
-        # Receipt System
-        "receipt_title": "🧾 अपराध रिपोर्ट रसीद",
-        "receipt_warning": "⚠️ महत्वपूर्ण: अपनी रिपोर्ट की स्थिति ट्रैक करने के लिए स्क्रीनशॉट लेकर इस रिपोर्ट ID को सेव करें।",
-        "track_id_prompt": "अपनी रिपोर्ट ID (केस ID) दर्ज करें:",
-        # QR Code
-        "qr_title": "📡 ऐप शेयर करें",
-        "qr_caption": "डिवाइस पर खोलने के लिए स्कैन करें",
-        # Warning text for GPS
-        "html_warn_enter": "⚠️ महत्वपूर्वपूर्ण: नीचे दिए बॉक्स पर क्लिक करें और ENTER दबाएं।",
-        # Close button
-        "close_case_btn": "🔒 केस बंद करें"
+        "fetching_addr":    "📍 GPS पता प्राप्त कर रहे हैं...",
+        "map_title":        "📍 लाइव केस लोकेशन मैप",
+        "no_gps_map":       "मैप पर दिखाने के लिए कोई GPS डेटा उपलब्ध नहीं।",
+        "critical_alert":   "🚨 गंभीर मामले पाए गए - तत्काल कार्रवाई आवश्यक 🚨",
+        "sidebar_alert":    "🚨 {} उच्च प्राथमिकता केस",
+        "receipt_title":    "🧾 अपराध रिपोर्ट रसीद",
+        "receipt_warning":  "⚠️ महत्वपूर्ण: अपनी रिपोर्ट की स्थिति ट्रैक करने के लिए स्क्रीनशॉट लेकर इस रिपोर्ट ID को सेव करें।",
+        "track_id_prompt":  "अपनी रिपोर्ट ID (केस ID) दर्ज करें:",
+        "qr_title":         "📡 ऐप शेयर करें",
+        "qr_caption":       "डिवाइस पर खोलने के लिए स्कैन करें",
+        "html_warn_enter":  "⚠️ महत्वपूर्ण: नीचे दिए बॉक्स पर क्लिक करें और ENTER दबाएं।",
+        "close_case_btn":   "🔒 केस बंद करें",
+        "nearest_station":  "📍 निकटतम स्टेशन:",
+        "sos_routed_to":    "🚔 SOS निकटतम स्टेशन को भेजा गया:",
+        "emg_routed_to":    "🚔 इमरजेंसी निकटतम स्टेशन को भेजी गई:",
+        "fallback_station": "(फॉलबैक: चुने गए क्षेत्र के आधार पर)",
+        "sos_station_info": "ℹ️ SOS आपके GPS निर्देशांकों के आधार पर स्वचालित रूप से निकटतम पुलिस स्टेशन को भेजा जाता है।",
+        "total_sos":        "कुल SOS अलर्ट",
+        "station_label":    "🏢 असाइन किया गया स्टेशन:",
     },
     "Telugu": {
         "title":            "🚨 ఆరోరా సెంటినల్ – నేర నివేదన & ట్రాకింగ్ వ్యవస్థ",
@@ -593,6 +604,8 @@ ALL_T = {
         "no_sos":           "SOS హెచ్చరికలు లేవు.",
         "logout":           "🚪 లాగ్అవుట్",
         "chart_main":       "📊 సిస్టమ్ అవలోకనం: కేసులు, ఎమర్జెన్సీలు & SOS",
+        "chart_xlabel":     "వర్గం",
+        "chart_ylabel":     "సంఖ్య",
         "no_data_chart":    "చార్ట్‌లకు ఇంకా డేటా అందుబాటులో లేదు.",
         "gps_loc_label":    "📍 GPS స్థానం:",
         "gps_coords":       "🌐 GPS అక్షాంశాలు:",
@@ -624,33 +637,36 @@ ALL_T = {
         "emg_submitted":    "🚨 ఎమర్జెన్సీ నమోదు చేయబడింది!",
         "routed_to":        "🚔 పంపబడింది:",
         "ml_info":          "🤖 AI ప్రాధాన్యత అంచనా క్రియాశీలంగా ఉంది (వివరణ నుండి నేర్చుకుంటుంది)",
-        "legend_high_crimes": "అధిక ప్రాధాన్యత నేరాలు",
-        "legend_emergencies": "అత్యవసర నివేదికలు",
-        "legend_sos": "SOS హెచ్చరికలు",
-        "legend_medium": "మధ్యస్థ ప్రాధాన్యత",
-        "legend_low": "తక్కువ ప్రాధాన్యత",
+        "legend_high_crimes": "అధిక ప్రాధాన్యత\nనేరాలు",
+        "legend_emergencies": "ఎమర్జెన్సీలు",
+        "legend_sos":       "SOS హెచ్చరికలు",
+        "legend_medium":    "మధ్యస్థ\nప్రాధాన్యత",
+        "legend_low":       "తక్కువ\nప్రాధాన్యత",
         "html_loc_detected": "స్థానం గుర్తించబడింది!",
-        "html_lat": "అక్షాంశం",
-        "html_lon": "రేఖాంశం",
-        "html_err_denied": "❌ స్థానం అనుమతి తిరస్కరించబడింది.",
-        "html_detecting": "📡 గుర్తిస్తోంది…",
+        "html_lat":         "అక్షాంశం",
+        "html_lon":         "రేఖాంశం",
+        "html_err_denied":  "❌ స్థానం అనుమతి తిరస్కరించబడింది.",
+        "html_detecting":   "📡 గుర్తిస్తోంది…",
         "html_btn_detected": "✅ GPS గుర్తించబడింది",
-        "fetching_addr": "📍 GPS చిరునామా తెస్తోంది...",
-        "map_title": "📍 లైవ్ కేస్ లొకేషన్లు మ్యాప్",
-        "no_gps_map": "మ్యాప్‌లో చూపడానికి GPS డేటా లేదు.",
-        "critical_alert": "🚨 క్లిష్టమైన కేసులు గుర్తించబడ్డాయి - తక్షణ చర్య అవసరం 🚨",
-        "sidebar_alert": "🚨 {} అధిక ప్రాధాన్యత కేసులు",
-        # Receipt System
-        "receipt_title": "🧾 నేర నివేదిక రసీదు",
-        "receipt_warning": "⚠️ ముఖ్యమైనది: మీ కేసు స్థితిని ట్రాక్ చేయడానికి స్క్రీన్‌షాట్ తీసుకోవడం ద్వారా ఈ రిపోర్ట్ IDని సేవ్ చేయండి.",
-        "track_id_prompt": "మీ రిపోర్ట్ ID (కేస్ ID) నమోదు చేయండి:",
-        # QR Code
-        "qr_title": "📡 యాప్ షేర్ చేయండి",
-        "qr_caption": "పరికరంలో తెరవడానికి స్కాన్ చేయండి",
-        # Warning text for GPS
-        "html_warn_enter": "⚠️ ముఖ్యం: కింద ఉన్న పెట్టెలపై క్లిక్ చేసి ENTER నొక్కండి.",
-        # Close button
-        "close_case_btn": "🔒 కేస్ మూసివేయి"
+        "fetching_addr":    "📍 GPS చిరునామా తెస్తోంది...",
+        "map_title":        "📍 లైవ్ కేస్ లొకేషన్లు మ్యాప్",
+        "no_gps_map":       "మ్యాప్‌లో చూపడానికి GPS డేటా లేదు.",
+        "critical_alert":   "🚨 క్లిష్టమైన కేసులు గుర్తించబడ్డాయి - తక్షణ చర్య అవసరం 🚨",
+        "sidebar_alert":    "🚨 {} అధిక ప్రాధాన్యత కేసులు",
+        "receipt_title":    "🧾 నేర నివేదిక రసీదు",
+        "receipt_warning":  "⚠️ ముఖ్యమైనది: మీ కేసు స్థితిని ట్రాక్ చేయడానికి స్క్రీన్‌షాట్ తీసుకోవడం ద్వారా ఈ రిపోర్ట్ IDని సేవ్ చేయండి.",
+        "track_id_prompt":  "మీ రిపోర్ట్ ID (కేస్ ID) నమోదు చేయండి:",
+        "qr_title":         "📡 యాప్ షేర్ చేయండి",
+        "qr_caption":       "పరికరంలో తెరవడానికి స్కాన్ చేయండి",
+        "html_warn_enter":  "⚠️ ముఖ్యం: కింద ఉన్న పెట్టెలపై క్లిక్ చేసి ENTER నొక్కండి.",
+        "close_case_btn":   "🔒 కేస్ మూసివేయి",
+        "nearest_station":  "📍 సమీప స్టేషన్:",
+        "sos_routed_to":    "🚔 SOS సమీప స్టేషన్‌కు పంపబడింది:",
+        "emg_routed_to":    "🚔 ఎమర్జెన్సీ సమీప స్టేషన్‌కు పంపబడింది:",
+        "fallback_station": "(ఫాల్‌బ్యాక్: ఎంచుకున్న ప్రాంతం ఆధారంగా)",
+        "sos_station_info": "ℹ️ SOS మీ GPS నిర్దేశాంకాల ఆధారంగా స్వయంచాలకంగా సమీప పోలీస్ స్టేషన్‌కు పంపబడుతుంది.",
+        "total_sos":        "మొత్తం SOS హెచ్చరికలు",
+        "station_label":    "🏢 కేటాయించిన స్టేషన్:",
     }
 }
 
@@ -665,7 +681,6 @@ def generate_case_id(location_en):
     count = cursor.fetchone()[0] + 1
     return f"{code}-{yr}-{str(count).zfill(3)}"
 
-# RESTORED YELLOW WARNING LINE
 def auto_gps_component(lat_label: str, lon_label: str, btn_label: str, t_dict):
     html = f"""
     <style>
@@ -711,57 +726,117 @@ def auto_gps_component(lat_label: str, lon_label: str, btn_label: str, t_dict):
     </script>"""
     components.html(html, height=180)
 
-def render_dashboard_charts(df_reports, df_sos, t):
-    # EXCLUDE CLOSED CASES FROM CHARTS
-    active_reports = df_reports[df_reports["status"] != "Closed"]
-    
-    high_count = len(active_reports[(active_reports["priority"] == "High") & (active_reports["crime_type"] != "Emergency")])
-    emergency_count = len(active_reports[active_reports["crime_type"] == "Emergency"])
-    sos_count = len(df_sos) # Assuming SOS are always active or handled separately
-    medium_count = len(active_reports[active_reports["priority"] == "Medium"])
-    low_count = len(active_reports[active_reports["priority"] == "Low"])
 
-    if (high_count + emergency_count + sos_count + medium_count + low_count) == 0:
+# ================================================================
+#  DASHBOARD BAR CHART  (replaces the donut chart)
+#  Works with all 3 languages – uses short English tick labels
+#  to avoid font rendering issues, with translated axis titles
+#  and a fully translated legend / title.
+# ================================================================
+
+def render_dashboard_charts(df_reports, df_sos, t):
+    # Exclude closed cases
+    active_reports = df_reports[df_reports["status"] != "Closed"]
+
+    high_count      = len(active_reports[(active_reports["priority"] == "High") &
+                                          (active_reports["crime_type"] != "Emergency")])
+    emergency_count = len(active_reports[active_reports["crime_type"] == "Emergency"])
+    sos_count       = len(df_sos)
+    medium_count    = len(active_reports[active_reports["priority"] == "Medium"])
+    low_count       = len(active_reports[active_reports["priority"] == "Low"])
+
+    total = high_count + emergency_count + sos_count + medium_count + low_count
+    if total == 0:
         st.info(t["no_data_chart"])
         return
 
-    labels = [t["legend_high_crimes"], t["legend_emergencies"], t["legend_sos"], t["legend_medium"], t["legend_low"]]
-    sizes = [high_count, emergency_count, sos_count, medium_count, low_count]
-    
-    filtered_labels = []
-    filtered_sizes = []
-    for l, s in zip(labels, sizes):
-        if s > 0:
-            filtered_labels.append(l)
-            filtered_sizes.append(s)
+    # Translated category labels (may contain non-ASCII; rendered as text inside bars)
+    categories = [
+        t["legend_high_crimes"],
+        t["legend_emergencies"],
+        t["legend_sos"],
+        t["legend_medium"],
+        t["legend_low"],
+    ]
+    counts = [high_count, emergency_count, sos_count, medium_count, low_count]
+    colors = ["#e74c3c", "#c0392b", "#e67e22", "#f1c40f", "#2ecc71"]
 
-    color_map = {
-        t["legend_high_crimes"]: "#e74c3c", t["legend_emergencies"]: "#c0392b", t["legend_sos"]: "#e67e22", t["legend_medium"]: "#f1c40f", t["legend_low"]: "#2ecc71"
+    # Filter out zero-count categories
+    filtered = [(c, v, col) for c, v, col in zip(categories, counts, colors) if v > 0]
+    if not filtered:
+        st.info(t["no_data_chart"])
+        return
+
+    f_cats, f_vals, f_cols = zip(*filtered)
+
+    # Short English x-axis tick labels (safe for all fonts)
+    tick_labels = []
+    label_map = {
+        t["legend_high_crimes"]: "High\nCrimes",
+        t["legend_emergencies"]: "Emergency",
+        t["legend_sos"]:         "SOS",
+        t["legend_medium"]:      "Medium",
+        t["legend_low"]:         "Low",
     }
-    final_colors = [color_map[l] for l in filtered_labels]
+    for c in f_cats:
+        tick_labels.append(label_map.get(c, c))
 
-    fig, ax = plt.subplots(figsize=(6, 5))
-    ax.pie(filtered_sizes, labels=filtered_labels, colors=final_colors, autopct=lambda p: '{:.0f}'.format(p * sum(filtered_sizes) / 100) if p > 0 else '', startangle=90, pctdistance=0.85, wedgeprops=dict(width=0.4, edgecolor='w'))
-    centre_circle = plt.Circle((0,0),0.70,fc='white')
-    ax.add_patch(centre_circle)
-    ax.set_title(t["chart_main"], fontsize=14, fontweight='bold', pad=20)
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    x_pos = np.arange(len(f_vals))
+    bars = ax.bar(x_pos, f_vals, color=f_cols, edgecolor="white",
+                  linewidth=1.5, width=0.55, zorder=3)
+
+    # Value labels on top of each bar
+    for bar, val in zip(bars, f_vals):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.05,
+            str(val),
+            ha="center", va="bottom",
+            fontsize=13, fontweight="bold", color="#333333"
+        )
+
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(tick_labels, fontsize=10, fontweight="bold")
+    ax.set_ylabel(t["chart_ylabel"], fontsize=11, labelpad=8)
+    ax.set_xlabel(t["chart_xlabel"], fontsize=11, labelpad=8)
+    ax.set_title(t["chart_main"], fontsize=13, fontweight="bold", pad=14)
+    ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    ax.set_ylim(0, max(f_vals) + max(1, max(f_vals) * 0.25))
+    ax.grid(axis="y", linestyle="--", alpha=0.5, zorder=0)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    # Colour-coded legend with translated names
+    from matplotlib.patches import Patch
+    legend_handles = [Patch(facecolor=col, label=cat.replace("\n", " "))
+                      for cat, col in zip(f_cats, f_cols)]
+    ax.legend(handles=legend_handles, loc="upper right",
+              fontsize=9, framealpha=0.85)
+
+    plt.tight_layout()
     st.pyplot(fig)
     plt.close(fig)
+
 
 # ================================================================
 #  MAIN APP
 # ================================================================
+
 language = st.sidebar.selectbox("🌐 Language", ["English", "Hindi", "Telugu"])
 t = ALL_T[language]
-if "police_logged" not in st.session_state: st.session_state.police_logged = False
+
+if "police_logged" not in st.session_state:
+    st.session_state.police_logged = False
+
 st.title(t["title"])
 menu = st.sidebar.selectbox(t["nav_label"], t["navigation"])
 
-# --- SIDEBAR: QR CODE SHARING FEATURE (AUTO URL) ---
+# --- SIDEBAR: QR CODE SHARING FEATURE ---
 st.sidebar.markdown("---")
 st.sidebar.subheader(t["qr_title"])
 
-# Hardcoded URL
 APP_URL = "https://aurora-sentinel.streamlit.app"
 
 if QR_AVAILABLE:
@@ -789,53 +864,67 @@ if menu == t["navigation"][0]:
     # --- ONE-TAP EMERGENCY ---
     st.markdown("---")
     st.subheader(t["one_tap_title"])
-    
+
     if 'last_emg_file' not in st.session_state:
         st.session_state.last_emg_file = ""
 
     auto_gps_component(t["lat_input"], t["lon_input"], t["gps_btn_report"], t)
-    
-    col_lat, col_lon = st.columns(2)
-    with col_lat: emg_lat = st.text_input(t["lat_input"], key="emg_lat", placeholder=t["lat_placeholder"])
-    with col_lon: emg_lon = st.text_input(t["lon_input"], key="emg_lon", placeholder=t["lon_placeholder"])
 
-    emg_location_idx = st.selectbox(t["location"] + " (Fallback)", range(len(t["locations"])), format_func=lambda x: t["locations"][x], key="emergency_loc")
-    
+    col_lat, col_lon = st.columns(2)
+    with col_lat:
+        emg_lat = st.text_input(t["lat_input"], key="emg_lat", placeholder=t["lat_placeholder"])
+    with col_lon:
+        emg_lon = st.text_input(t["lon_input"], key="emg_lon", placeholder=t["lon_placeholder"])
+
+    emg_location_idx = st.selectbox(
+        t["location"] + " (Fallback)",
+        range(len(t["locations"])),
+        format_func=lambda x: t["locations"][x],
+        key="emergency_loc"
+    )
+
     emergency_image = st.file_uploader(t["upload_emg_img"], type=["jpg", "jpeg", "png"], key="emg_img")
-    
+
     if emergency_image is not None:
         current_file_sig = f"{emergency_image.name}_{emergency_image.size}"
-        
+
         if st.session_state.last_emg_file != current_file_sig:
             st.session_state.last_emg_file = current_file_sig
-            
+
             location_en = ALL_T["English"]["locations"][emg_location_idx]
             case_id = "EMG-" + os.urandom(3).hex()
             img_filename = f"{case_id}.jpg"
             img_full_path = os.path.join(IMAGE_FOLDER, img_filename)
-            
+
             with open(img_full_path, "wb") as f:
                 f.write(emergency_image.getbuffer())
-            
+
             assigned_station = ""
-            lat_val = None; lon_val = None
-            
+            lat_val = None
+            lon_val = None
+
             if emg_lat and emg_lon:
-                try: 
-                    lat_val = float(emg_lat); lon_val = float(emg_lon)
+                try:
+                    lat_val = float(emg_lat)
+                    lon_val = float(emg_lon)
                     assigned_station = get_nearest_station(lat_val, lon_val)
-                except: pass
-            
+                except:
+                    pass
+
             if not assigned_station:
                 assigned_station = AREA_TO_STATION.get(location_en, location_en)
-            
+
             place_name = get_place_name(lat_val, lon_val) if lat_val else ""
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-            cursor.execute("INSERT INTO reports (case_id, crime_type, location, latitude, longitude, place_name, description, evidence, priority, status, timestamp, assigned_station) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                (case_id, "Emergency", location_en, lat_val, lon_val, place_name, "One-Tap Emergency Image Submission", img_filename, "High", "CRITICAL", timestamp, assigned_station))
+
+            cursor.execute(
+                "INSERT INTO reports (case_id, crime_type, location, latitude, longitude, place_name, description, evidence, priority, status, timestamp, assigned_station) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                (case_id, "Emergency", location_en, lat_val, lon_val, place_name,
+                 "One-Tap Emergency Image Submission", img_filename, "High", "CRITICAL",
+                 timestamp, assigned_station)
+            )
             conn.commit()
-            
+
             st.markdown(f"""
             <div class="receipt-box">
                 <h3>{t['receipt_title']}</h3>
@@ -844,71 +933,98 @@ if menu == t["navigation"][0]:
                 <div class="receipt-id">{case_id}</div>
                 <p><strong>{t['crime_type']}:</strong> Emergency</p>
                 <p><strong>{t['time_label']}</strong> {timestamp}</p>
+                <p><strong>{t['station_label']}</strong> {assigned_station}</p>
                 <hr>
                 <p style="color: #d32f2f; font-weight: bold;">{t['receipt_warning']}</p>
             </div>
             """, unsafe_allow_html=True)
-            st.error(f"{t['routed_to']} {assigned_station} Station (Nearest)")
+            st.error(f"{t['emg_routed_to']} **{assigned_station}**")
             st.markdown("---")
         else:
             st.info("✅ This emergency report has already been submitted.")
 
     # --- Normal Report Form ---
+    st.markdown("---")
     st.subheader("📝 " + t["report_crime"])
     col1, col2 = st.columns(2)
-    with col1: crime_idx = st.selectbox(t["crime_type"], range(len(t["crime_types"])), format_func=lambda i: t["crime_types"][i]); loc_idx = st.selectbox(t["location"], range(len(t["locations"])), format_func=lambda i: t["locations"][i]); dur_idx = st.selectbox(t["duration"], range(len(t["durations"])), format_func=lambda i: t["durations"][i])
-    with col2: inc_idx = st.selectbox(t["incident"], range(len(t["incidents"])), format_func=lambda i: t["incidents"][i])
+    with col1:
+        crime_idx = st.selectbox(t["crime_type"], range(len(t["crime_types"])), format_func=lambda i: t["crime_types"][i])
+        loc_idx = st.selectbox(t["location"], range(len(t["locations"])), format_func=lambda i: t["locations"][i])
+        dur_idx = st.selectbox(t["duration"], range(len(t["durations"])), format_func=lambda i: t["durations"][i])
+    with col2:
+        inc_idx = st.selectbox(t["incident"], range(len(t["incidents"])), format_func=lambda i: t["incidents"][i])
 
     st.info(t["live_location_info"])
     auto_gps_component(t["lat_input"], t["lon_input"], t["gps_btn_report"], t)
 
     col_lat, col_lon = st.columns(2)
-    with col_lat: lat = st.text_input(t["lat_input"], key="report_lat", placeholder=t["lat_placeholder"])
-    with col_lon: lon = st.text_input(t["lon_input"], key="report_lon", placeholder=t["lon_placeholder"])
+    with col_lat:
+        lat = st.text_input(t["lat_input"], key="report_lat", placeholder=t["lat_placeholder"])
+    with col_lon:
+        lon = st.text_input(t["lon_input"], key="report_lon", placeholder=t["lon_placeholder"])
 
     description = st.text_area(t["description"])
 
     st.subheader(t["evidence_section"])
     evidence_type = st.radio(t["evidence_type"], [t["image"], t["pdf"]], horizontal=True)
     col1, col2 = st.columns(2)
-    with col1: images = st.file_uploader(t["upload_images"], type=["jpg","jpeg","png"], accept_multiple_files=True, disabled=(evidence_type != t["image"]))
-    with col2: pdf_file = st.file_uploader(t["upload_pdf"], type=["pdf"], disabled=(evidence_type != t["pdf"]))
+    with col1:
+        images = st.file_uploader(t["upload_images"], type=["jpg","jpeg","png"],
+                                   accept_multiple_files=True,
+                                   disabled=(evidence_type != t["image"]))
+    with col2:
+        pdf_file = st.file_uploader(t["upload_pdf"], type=["pdf"],
+                                     disabled=(evidence_type != t["pdf"]))
 
     if st.button(t["submit"], type="primary"):
         location_en = ALL_T["English"]["locations"][loc_idx]
         crime_type_en = ALL_T["English"]["crime_types"][crime_idx]
         case_id = generate_case_id(location_en)
-        lat_val = lon_val = None; place_name = ""
+        lat_val = lon_val = None
+        place_name = ""
+
         assigned_station = AREA_TO_STATION.get(location_en, location_en)
-        
+
         if lat and lon:
-            try: 
-                lat_val = float(lat); lon_val = float(lon)
+            try:
+                lat_val = float(lat)
+                lon_val = float(lon)
                 place_name = get_place_name(lat_val, lon_val)
-            except ValueError: st.error(t["location_error"]); st.stop()
+                assigned_station = get_nearest_station(lat_val, lon_val)
+            except ValueError:
+                st.error(t["location_error"])
+                st.stop()
 
         evidence = "No Evidence"
         if images:
             saved = []
             for img in images:
                 fname = f"{case_id}_{img.name}"
-                with open(os.path.join(IMAGE_FOLDER, fname), "wb") as f: f.write(img.getbuffer())
+                with open(os.path.join(IMAGE_FOLDER, fname), "wb") as f:
+                    f.write(img.getbuffer())
                 saved.append(fname)
             evidence = "Images: " + "||".join(saved)
         elif pdf_file:
             fname = f"{case_id}_{pdf_file.name}"
-            with open(os.path.join(IMAGE_FOLDER, fname), "wb") as f: f.write(pdf_file.getbuffer())
+            with open(os.path.join(IMAGE_FOLDER, fname), "wb") as f:
+                f.write(pdf_file.getbuffer())
             evidence = "PDF: " + fname
 
-        if not description.strip(): description = "No Description"
+        if not description.strip():
+            description = "No Description"
         priority = get_priority_ml(crime_type_en, description)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         incident_en = ALL_T["English"]["incidents"][inc_idx]
 
-        cursor.execute("INSERT INTO reports (case_id,crime_type,latitude,longitude,place_name,location,duration,description,evidence,priority,status,timestamp,assigned_station) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (case_id, crime_type_en, lat_val, lon_val, place_name, location_en + " | " + incident_en, ALL_T["English"]["durations"][dur_idx], description, evidence, priority, "Under Review", timestamp, assigned_station))
+        cursor.execute(
+            "INSERT INTO reports (case_id,crime_type,latitude,longitude,place_name,location,duration,description,evidence,priority,status,timestamp,assigned_station) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (case_id, crime_type_en, lat_val, lon_val, place_name,
+             location_en + " | " + incident_en,
+             ALL_T["English"]["durations"][dur_idx],
+             description, evidence, priority, "Under Review", timestamp, assigned_station)
+        )
         conn.commit()
-        
+
         st.markdown(f"""
         <div class="receipt-box">
             <h3>{t['receipt_title']}</h3>
@@ -918,14 +1034,16 @@ if menu == t["navigation"][0]:
             <p><strong>{t['crime_type']}:</strong> {t['crime_types'][crime_idx]}</p>
             <p><strong>{t['location_label']}</strong> {t['locations'][loc_idx]}</p>
             <p><strong>{t['time_label']}</strong> {timestamp}</p>
+            <p><strong>{t['station_label']}</strong> {assigned_station}</p>
             <hr>
             <p style="color: #d32f2f; font-weight: bold;">{t['receipt_warning']}</p>
         </div>
         """, unsafe_allow_html=True)
         st.info(f"🔥 **Predicted Priority: {priority}**")
+        st.info(f"{t['nearest_station']} **{assigned_station}**")
 
 # ================================================================
-#  PAGE 2 – TRACK CASE (MAP INSTEAD OF ADDRESS)
+#  PAGE 2 – TRACK CASE
 # ================================================================
 elif menu == t["navigation"][1]:
     st.subheader(t["track_title"])
@@ -937,34 +1055,45 @@ elif menu == t["navigation"][1]:
         else:
             cursor.execute("SELECT * FROM reports WHERE case_id = ?", (case_id_input.strip(),))
             case = cursor.fetchone()
-            
+
             if case:
                 st.success(t["case_found"])
                 col1, col2 = st.columns(2)
-                with col1: st.write(t["case_id_label"], case["case_id"]); st.write(t["location_label"], case["location"]); st.write(t["duration_label"], case["duration"]); st.write(t["time_label"], case["timestamp"])
-                with col2: st.write(t["status_label"], case["status"]); st.write(t["priority_label"], case["priority"])
-                
-                # CHANGED: Show Map instead of address
+                with col1:
+                    st.write(t["case_id_label"], case["case_id"])
+                    st.write(t["location_label"], case["location"])
+                    st.write(t["duration_label"], case["duration"])
+                    st.write(t["time_label"], case["timestamp"])
+                with col2:
+                    st.write(t["status_label"], case["status"])
+                    st.write(t["priority_label"], case["priority"])
+                    st.write(t["station_label"], case["assigned_station"])
+
                 if case["latitude"] is not None:
                     st.subheader(t["map_title"])
                     map_data = pd.DataFrame({'lat': [case['latitude']], 'lon': [case['longitude']]})
                     st.map(map_data)
-                else: 
+                else:
                     st.info(t["no_gps"])
 
                 if case["evidence"] and case["evidence"] != "No Evidence":
                     if case["evidence"].startswith("Images:"):
-                        imgs = case["evidence"].replace("Images:","").split("||")
+                        imgs = case["evidence"].replace("Images:", "").split("||")
                         st.markdown(f"**{t['evidence_images']}**")
                         for img in imgs:
                             ip = img.strip()
-                            if not os.path.isabs(ip): ip = os.path.join(IMAGE_FOLDER, ip)
-                            if os.path.exists(ip): st.image(ip, width=300)
+                            if not os.path.isabs(ip):
+                                ip = os.path.join(IMAGE_FOLDER, ip)
+                            if os.path.exists(ip):
+                                st.image(ip, width=300)
                     elif case["evidence"].endswith((".jpg", ".png", ".jpeg")):
                         ip = os.path.join(IMAGE_FOLDER, case["evidence"])
-                        if os.path.exists(ip): st.image(ip, width=300, caption="Emergency Evidence")
-                    elif case["evidence"].startswith("PDF:"): st.info(t["evidence_file"] + " " + case["evidence"].replace("PDF:",""))
-            else: st.error(t["case_not_found"])
+                        if os.path.exists(ip):
+                            st.image(ip, width=300, caption="Emergency Evidence")
+                    elif case["evidence"].startswith("PDF:"):
+                        st.info(t["evidence_file"] + " " + case["evidence"].replace("PDF:", ""))
+            else:
+                st.error(t["case_not_found"])
 
 # ================================================================
 #  PAGE 3 – ADMIN PANEL
@@ -975,104 +1104,131 @@ elif menu == t["navigation"][2]:
         station = st.selectbox(t["station"], sorted(station_passkeys.keys()))
         passkey = st.text_input(t["passkey"], type="password")
         if st.button(t["login"]):
-            if station_passkeys.get(station) == passkey: st.session_state.police_logged = True; st.session_state.station = station; st.rerun()
-            else: st.error(t["login_fail"])
+            if station_passkeys.get(station) == passkey:
+                st.session_state.police_logged = True
+                st.session_state.station = station
+                st.rerun()
+            else:
+                st.error(t["login_fail"])
     else:
         st.success(f"{t['logged_in_as']}: {st.session_state.station}")
-        
-        # Calculate Alert Counts (Exclude Closed)
-        df_alerts = pd.read_sql_query("SELECT priority, status FROM reports WHERE assigned_station=?", conn, params=(st.session_state.station,))
-        
-        # High Priority Count: Priority is High AND Status is NOT Closed
-        high_alert_count = len(df_alerts[(df_alerts["priority"] == "High") & (df_alerts["status"] != "Closed")])
-        
+
+        df_alerts = pd.read_sql_query(
+            "SELECT priority, status FROM reports WHERE assigned_station=?",
+            conn, params=(st.session_state.station,)
+        )
+        high_alert_count = len(df_alerts[
+            (df_alerts["priority"] == "High") & (df_alerts["status"] != "Closed")
+        ])
         if high_alert_count > 0:
-            st.sidebar.markdown(f"<div class='alert-badge'>{t['sidebar_alert'].format(high_alert_count)}</div>", unsafe_allow_html=True)
+            st.sidebar.markdown(
+                f"<div class='alert-badge'>{t['sidebar_alert'].format(high_alert_count)}</div>",
+                unsafe_allow_html=True
+            )
 
         tab1, tab2, tab3 = st.tabs([t["dashboard"], t["crime_reports_tab"], t["sos_tab"]])
-        
+
         # ================== DASHBOARD ==================
         with tab1:
             df_reports = pd.read_sql_query(
                 "SELECT * FROM reports WHERE assigned_station=?",
-                conn,
-                params=(st.session_state.station,)
+                conn, params=(st.session_state.station,)
             )
             df_sos = pd.read_sql_query(
-            "SELECT * FROM sos_alerts WHERE assigned_station=? ORDER BY id DESC",
-            conn,
-            params=(st.session_state.station,)
+                "SELECT * FROM sos_alerts WHERE assigned_station=? ORDER BY id DESC",
+                conn, params=(st.session_state.station,)
             )
-            
-            if not df_reports.empty or not df_sos.empty:
-                # FLASH ALERT: Stop blinking if all high priority cases are closed
-                active_critical = len(df_reports[(df_reports["priority"] == "High") & (df_reports["status"] != "Closed")])
-                if active_critical > 0:
-                    st.markdown(f"<div class='flash-box'>{t['critical_alert']}</div>", unsafe_allow_html=True)
 
-                # METRICS
-                c1, c2, c3 = st.columns(3)
-                c1.metric(t["total_cases"], len(df_reports) + len(df_sos))
-                
-                # Urgent = High Priority AND Not Closed
-                urgent_count = len(df_reports[(df_reports["priority"] == "High") & (df_reports["status"] != "Closed")])
+            if not df_reports.empty or not df_sos.empty:
+                active_critical = len(df_reports[
+                    (df_reports["priority"] == "High") & (df_reports["status"] != "Closed")
+                ])
+                if active_critical > 0:
+                    st.markdown(
+                        f"<div class='flash-box'>{t['critical_alert']}</div>",
+                        unsafe_allow_html=True
+                    )
+
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric(t["total_cases"], len(df_reports))
+                urgent_count = len(df_reports[
+                    (df_reports["priority"] == "High") & (df_reports["status"] != "Closed")
+                ])
                 c2.metric(t["urgent_cases"], urgent_count)
-                
                 closed_count = len(df_reports[df_reports["status"] == "Closed"])
                 c3.metric(t["closed_cases"], closed_count)
-                
+                c4.metric(t["total_sos"], len(df_sos))
+
                 st.markdown("---")
                 render_dashboard_charts(df_reports, df_sos, t)
-            else: st.info(t["no_data_chart"])
+            else:
+                st.info(t["no_data_chart"])
 
         # ================== CRIME REPORTS TAB ==================
         with tab2:
             st.subheader(t["crime_reports_tab"])
             reports = cursor.execute(
-                "SELECT * FROM reports WHERE assigned_station=? ORDER BY CASE WHEN priority='High' THEN 0 ELSE 1 END, id DESC",
+                """SELECT * FROM reports
+                   WHERE assigned_station=?
+                   ORDER BY CASE WHEN priority='High' THEN 0 ELSE 1 END, id DESC""",
                 (st.session_state.station,)
             ).fetchall()
-            
-            if not reports: st.info(t["no_reports"])
+
+            if not reports:
+                st.info(t["no_reports"])
             else:
-                # MAP SECTION - Filter out Closed cases for the map
-                # Map disappears if all cases are closed
-                
-                # CASES LIST
                 for r in reports:
-                    with st.expander(f"📌 {r['case_id']} | {r['crime_type']} | {r['priority']}"):
-
+                    priority_icon = "🔴" if r["priority"] == "High" else ("🟡" if r["priority"] == "Medium" else "🟢")
+                    with st.expander(f"{priority_icon} {r['case_id']} | {r['crime_type']} | {r['priority']} | {r['status']}"):
                         col1, col2 = st.columns(2)
-
                         with col1:
                             st.write(t["case_id_label"], r["case_id"])
                             st.write(t["crime_type"] + ":", r["crime_type"])
                             st.write(t["location_label"], r["location"])
-
+                            st.write(t["duration_label"], r["duration"] if r["duration"] else "—")
+                            st.write(t["time_label"], r["timestamp"])
                         with col2:
                             st.write(t["priority_label"], r["priority"])
                             st.write(t["status_label"], r["status"])
+                            st.write(t["station_label"], r["assigned_station"])
+                            if r["description"] and r["description"] != "No Description":
+                                st.write(t["description_lbl"], r["description"])
 
-                        # Map
                         if r["latitude"] is not None:
                             case_map = pd.DataFrame({
-                                "lat":[r["latitude"]],
-                                "lon":[r["longitude"]]
+                                "lat": [r["latitude"]],
+                                "lon": [r["longitude"]]
                             })
                             st.map(case_map)
 
+                        if r["evidence"] and r["evidence"] not in ("No Evidence", ""):
+                            if r["evidence"].startswith("Images:"):
+                                imgs = r["evidence"].replace("Images:", "").split("||")
+                                st.markdown(f"**{t['evidence_images']}**")
+                                for img in imgs:
+                                    ip = img.strip()
+                                    if not os.path.isabs(ip):
+                                        ip = os.path.join(IMAGE_FOLDER, ip)
+                                    if os.path.exists(ip):
+                                        st.image(ip, width=300)
+                                    else:
+                                        st.warning(t["image_not_found"])
+                            elif r["evidence"].endswith((".jpg", ".png", ".jpeg")):
+                                ip = os.path.join(IMAGE_FOLDER, r["evidence"])
+                                if os.path.exists(ip):
+                                    st.image(ip, width=300, caption="Emergency Evidence")
+                            elif r["evidence"].startswith("PDF:"):
+                                st.info(t["evidence_file"] + " " + r["evidence"].replace("PDF:", ""))
+
                         st.markdown("---")
 
-                        # Status update
-                        col_a, col_b, col_c = st.columns([2,1,1])
-
+                        col_a, col_b, col_c = st.columns([2, 1, 1])
                         with col_a:
                             new_status = st.selectbox(
                                 t["update_status"],
                                 t["status_options"],
                                 key=f"st_{r['id']}"
                             )
-
                         with col_b:
                             if st.button(t["save"], key=f"sv_{r['id']}"):
                                 cursor.execute(
@@ -1080,8 +1236,8 @@ elif menu == t["navigation"][2]:
                                     (new_status, r["id"])
                                 )
                                 conn.commit()
+                                st.success(t["status_updated"])
                                 st.rerun()
-
                         with col_c:
                             if st.button(t["close_case_btn"], key=f"cl_{r['id']}"):
                                 cursor.execute(
@@ -1090,47 +1246,55 @@ elif menu == t["navigation"][2]:
                                 )
                                 conn.commit()
                                 st.rerun()
+
         # ================== SOS TAB ==================
         with tab3:
             st.subheader(t["sos_tab"])
+            st.info(t["sos_station_info"])
 
             alerts = cursor.execute(
-            "SELECT * FROM sos_alerts WHERE assigned_station=? ORDER BY id DESC LIMIT 50",
-            (st.session_state.station,)
+                "SELECT * FROM sos_alerts WHERE assigned_station=? ORDER BY id DESC LIMIT 50",
+                (st.session_state.station,)
             ).fetchall()
+
             if not alerts:
                 st.info(t["no_sos"])
             else:
-                # SOS alert list
                 for s in alerts:
-                    with st.expander(f"🚨 SOS #{s['id']} | {s['timestamp']}"):
-                        
-                        st.write(f"{t['status_label']} {s['status']}")
+                    with st.expander(f"🚨 SOS #{s['id']} | {t['station_label']} {s['assigned_station']} | {s['timestamp']}"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.write(f"{t['status_label']} {s['status']}")
+                            st.write(f"{t['station_label']} {s['assigned_station']}")
+                            st.write(f"{t['time_label']} {s['timestamp']}")
+                        with col2:
+                            if s["place_name"]:
+                                st.write(f"{t['gps_place']} {s['place_name']}")
 
                         if s["latitude"] is not None:
-                            case_map = pd.DataFrame({
+                            sos_map = pd.DataFrame({
                                 "lat": [s["latitude"]],
                                 "lon": [s["longitude"]]
                             })
+                            st.map(sos_map)
 
-                            st.map(case_map)
-        # Removed coordinates and address text
-
-        if st.button(t["logout"]): st.session_state.police_logged = False; st.session_state.station = ""; st.rerun()
+        if st.button(t["logout"]):
+            st.session_state.police_logged = False
+            st.session_state.station = ""
+            st.rerun()
 
 # ================================================================
-#  PAGE 4 – SOS (SMART ROUTING)
+#  PAGE 4 – SOS (SMART ROUTING BY GPS)
 # ================================================================
 elif menu == t["navigation"][3]:
     st.subheader(t["sos_title"])
+    st.info(t["sos_station_info"])
 
     auto_gps_component(t["sos_lat_input"], t["sos_lon_input"], t["gps_btn_sos"], t)
 
     col1, col2 = st.columns(2)
-
     with col1:
         sos_lat = st.text_input(t["sos_lat_input"], key="sos_lat", placeholder=t["sos_lat_ph"])
-
     with col2:
         sos_lon = st.text_input(t["sos_lon_input"], key="sos_lon", placeholder=t["sos_lon_ph"])
 
@@ -1146,17 +1310,17 @@ elif menu == t["navigation"][3]:
                 place = get_place_name(lat_val, lon_val)
 
                 cursor.execute(
-                "INSERT INTO sos_alerts (location,latitude,longitude,place_name,status,timestamp,assigned_station) VALUES (?,?,?,?,?,?,?)",
-                (place, lat_val, lon_val, place, "CRITICAL",
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                nearest_station)
+                    "INSERT INTO sos_alerts (location, latitude, longitude, place_name, status, timestamp, assigned_station) VALUES (?,?,?,?,?,?,?)",
+                    (place, lat_val, lon_val, place, "CRITICAL",
+                     datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                     nearest_station)
                 )
-
                 conn.commit()
 
                 st.success(t["sos_sent"])
-                st.error(f"🚔 Routed to Nearest Station: {nearest_station}")
+                st.error(f"{t['sos_routed_to']} **{nearest_station}**")
                 st.info(f"{t['sos_your_loc']} {place}")
+                st.info(f"{t['nearest_station']} {nearest_station}")
 
             except:
                 st.error(t["location_error"])
