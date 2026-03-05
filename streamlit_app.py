@@ -121,8 +121,13 @@ CREATE TABLE IF NOT EXISTS reports (
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS sos_alerts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    location TEXT, latitude REAL, longitude REAL,
-    place_name TEXT, status TEXT, timestamp TEXT
+    location TEXT,
+    latitude REAL,
+    longitude REAL,
+    place_name TEXT,
+    status TEXT,
+    timestamp TEXT,
+    assigned_station TEXT
 )""")
 conn.commit()
 
@@ -993,7 +998,11 @@ elif menu == t["navigation"][2]:
                 conn,
                 params=(st.session_state.station,)
             )
-            df_sos = pd.read_sql_query("SELECT * FROM sos_alerts ORDER BY id DESC", conn)
+            df_sos = pd.read_sql_query(
+            "SELECT * FROM sos_alerts WHERE assigned_station=? ORDER BY id DESC",
+            conn,
+            params=(st.session_state.station,)
+            )
             
             if not df_reports.empty or not df_sos.empty:
                 # FLASH ALERT: Stop blinking if all high priority cases are closed
@@ -1086,9 +1095,9 @@ elif menu == t["navigation"][2]:
             st.subheader(t["sos_tab"])
 
             alerts = cursor.execute(
-                "SELECT * FROM sos_alerts ORDER BY id DESC LIMIT 50"
+            "SELECT * FROM sos_alerts WHERE assigned_station=? ORDER BY id DESC LIMIT 50",
+            (st.session_state.station,)
             ).fetchall()
-
             if not alerts:
                 st.info(t["no_sos"])
             else:
@@ -1137,8 +1146,10 @@ elif menu == t["navigation"][3]:
                 place = get_place_name(lat_val, lon_val)
 
                 cursor.execute(
-                    "INSERT INTO sos_alerts (location,latitude,longitude,place_name,status,timestamp) VALUES (?,?,?,?,?,?)",
-                    (place, lat_val, lon_val, place, "CRITICAL", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                "INSERT INTO sos_alerts (location,latitude,longitude,place_name,status,timestamp,assigned_station) VALUES (?,?,?,?,?,?,?)",
+                (place, lat_val, lon_val, place, "CRITICAL",
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                nearest_station)
                 )
 
                 conn.commit()
