@@ -5,9 +5,10 @@ import os
 import streamlit.components.v1 as components
 import requests
 import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+plt.rcParams['font.family'] = ['Noto Sans', 'Noto Sans CJK JP']
 import numpy as np
 import math
 
