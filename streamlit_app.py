@@ -988,7 +988,11 @@ elif menu == t["navigation"][2]:
         
         # ================== DASHBOARD ==================
         with tab1:
-            df_reports = pd.read_sql_query("SELECT * FROM reports WHERE assigned_station=? OR crime_type='Emergency'", conn, params=(st.session_state.station,))
+            df_reports = pd.read_sql_query(
+                "SELECT * FROM reports WHERE assigned_station=?",
+                conn,
+                params=(st.session_state.station,)
+            )
             df_sos = pd.read_sql_query("SELECT * FROM sos_alerts ORDER BY id DESC", conn)
             
             if not df_reports.empty or not df_sos.empty:
@@ -1016,8 +1020,9 @@ elif menu == t["navigation"][2]:
         with tab2:
             st.subheader(t["crime_reports_tab"])
             reports = cursor.execute(
-                "SELECT * FROM reports WHERE assigned_station=? OR crime_type='Emergency' ORDER BY CASE WHEN priority='High' THEN 0 ELSE 1 END, id DESC", 
-                (st.session_state.station,)).fetchall()
+                "SELECT * FROM reports WHERE assigned_station=? ORDER BY CASE WHEN priority='High' THEN 0 ELSE 1 END, id DESC",
+                (st.session_state.station,)
+            ).fetchall()
             
             if not reports: st.info(t["no_reports"])
             else:
