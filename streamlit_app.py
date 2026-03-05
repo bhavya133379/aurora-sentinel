@@ -121,12 +121,18 @@ CREATE TABLE IF NOT EXISTS sos_alerts (
 conn.commit()
 
 station_passkeys = {
-    "Hyderabad":        "HYD2024", "Hitech City":      "HITECH2024",
-    "Gachibowli":       "GACH2024", "Miyapur":          "MIYA2024",
-    "Kukatpally":       "KUKA2024", "Secunderabad":     "SEC2024",
-    "Begumpet":         "BEGU2024", "LB Nagar":         "LBN2024",
-    "Banjara Hills":    "BANJ2024", "Jubilee Hills":    "JUB2024",
-    "Ameerpet":         "AMEE2024", "Somajiguda":       "SOMA2024"
+    "Hyderabad": "HYD2026",
+    "Hitech City": "HITECH2026",
+    "Gachibowli": "GACH2026",
+    "Miyapur": "MIYA2026",
+    "Kukatpally": "KUKA2026",
+    "Secunderabad": "SEC2026",
+    "Begumpet": "BEGU2026",
+    "LB Nagar": "LBN2026",
+    "Banjara Hills": "BANJ2026",
+    "Jubilee Hills": "JUB2026",
+    "Ameerpet": "AMEE2026",
+    "Somajiguda": "SOMA2026"
 }
 
 AREA_TO_STATION = {k: k for k in station_passkeys.keys()}
